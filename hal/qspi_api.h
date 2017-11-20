@@ -163,6 +163,23 @@ qspi_status_t qspi_write_command(qspi_t *obj, const qspi_command_t *command);
  */
 qspi_status_t qspi_write(qspi_t *obj, const qspi_command_t *command, const void *data, size_t *length);
 
+
+/** Send a command (and optionally data) and get the response
+ *
+ * @param obj QSPI object
+ * @param command QSPI command
+ * @param tx_data TX buffer
+ * @param tx_length pointer to variable holding TX buffer length
+ * @param rx_data TX buffer
+ * @param rx_length pointer to variable holding TX buffer length
+ * @return QSPI_STATUS_OK if the data has been succesfully sent
+           QSPI_STATUS_INVALID_PARAMETER if invalid parameter found
+           QSPI_STATUS_ERROR otherwise
+ */
+
+qspi_status_t qspi_perform_command_transaction(qspi_t *obj, const qspi_command_t *command, const void *tx_data, size_t tx_length, void *rx_data, size_t rx_length); 
+
+
 /** Receive a command and block of data
  *
  * @param obj QSPI object
