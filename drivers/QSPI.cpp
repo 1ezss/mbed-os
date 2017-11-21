@@ -139,69 +139,77 @@ bool QSPI::initialize() {
 }
 
 int QSPI::read(unsigned int address, char *rx_buffer, size_t *rx_length) {
-    int ret = 1;
-    lock();
-    if( true == _acquire()) {
-        qspi_command_t *qspi_cmd = _build_qspi_command(-1, address, -1);
-        if(QSPI_STATUS_OK != qspi_read(&_qspi, qspi_cmd, rx_buffer, rx_length)) {
-            //We got error status, return 0
-            ret = 0;
+    int ret = 0;
+    
+    if( (rx_length != NULL) && (rx_buffer != NULL) ) {
+        if(*rx_length != 0) {
+            lock();
+            if( true == _acquire()) {
+                qspi_command_t *qspi_cmd = _build_qspi_command(-1, address, -1);
+                if(QSPI_STATUS_OK == qspi_read(&_qspi, qspi_cmd, rx_buffer, rx_length)) {
+                    ret = 1;
+                }
+            }
+            unlock();
         }
-    } else {
-        ret = 0;
     }
-    unlock();
     
     return ret;
 }
 
 int QSPI::write(unsigned int address, const char *tx_buffer, size_t *tx_length) {
-    int ret = 1;
-    lock();
-    if(true == _acquire()) {
-        qspi_command_t *qspi_cmd = _build_qspi_command(-1, address, -1);
-        if(QSPI_STATUS_OK != qspi_write(&_qspi, qspi_cmd, tx_buffer, tx_length)) {
-            //We got error status, return 0
-            ret = 0;
+    int ret = 0;
+    
+    if( (tx_length != NULL) && (tx_buffer != NULL) ) {
+        if(*tx_length != 0) {
+            lock();
+            if(true == _acquire()) {
+                qspi_command_t *qspi_cmd = _build_qspi_command(-1, address, -1);
+                if(QSPI_STATUS_OK == qspi_write(&_qspi, qspi_cmd, tx_buffer, tx_length)) {
+                    ret = 1;
+                }
+            }
+            unlock();
         }
-    } else {
-        ret = 0;
     }
-    unlock();
     
     return ret;
 }
 
 int QSPI::read(unsigned int instruction, unsigned int address, unsigned int alt, char *rx_buffer, size_t *rx_length) {
-    int ret = 1;
-    lock();
-    if( true == _acquire()) {
-        qspi_command_t *qspi_cmd = _build_qspi_command(instruction, address, alt);
-        if(QSPI_STATUS_OK != qspi_read(&_qspi, qspi_cmd, rx_buffer, rx_length)) {
-            //We got error status, return 0
-            ret = 0;
+    int ret = 0;
+    
+    if( (rx_length != NULL) && (rx_buffer != NULL) ) {
+        if(*rx_length != 0) {
+            lock();
+            if( true == _acquire()) {
+                qspi_command_t *qspi_cmd = _build_qspi_command(instruction, address, alt);
+                if(QSPI_STATUS_OK == qspi_read(&_qspi, qspi_cmd, rx_buffer, rx_length)) {
+                    ret = 1;
+                }
+            }
+            unlock();
         }
-    } else {
-        ret = 0;
     }
-    unlock();
     
     return ret;
 }
 
 int QSPI::write(unsigned int instruction, unsigned int address, unsigned int alt, const char *tx_buffer, size_t *tx_length) {
-    int ret = 1;
-    lock();
-    if(true == _acquire()) {
-        qspi_command_t *qspi_cmd = _build_qspi_command(instruction, address, alt);
-        if(QSPI_STATUS_OK != qspi_write(&_qspi, qspi_cmd, tx_buffer, tx_length)) {
-            //We got error status, return 0
-            ret = 0;
+    int ret = 0;
+    
+    if( (tx_length != NULL) && (tx_buffer != NULL) ) {
+        if(*tx_length != 0) {
+            lock();
+            if(true == _acquire()) {
+                qspi_command_t *qspi_cmd = _build_qspi_command(instruction, address, alt);
+                if(QSPI_STATUS_OK == qspi_write(&_qspi, qspi_cmd, tx_buffer, tx_length)) {
+                    ret = 1;
+                }
+            }
+            unlock();
         }
-    } else {
-        ret = 0;
     }
-    unlock();
     
     return ret;
 }
@@ -225,6 +233,7 @@ int QSPI::write_command(unsigned int instruction, unsigned int address, unsigned
 
 int QSPI::perform_command_transaction(unsigned int instruction, const char *tx_buffer, size_t tx_length, const char *rx_buffer, size_t rx_length) {
     int ret = 1;
+    
     lock();
     if(true == _acquire()) {
         qspi_command_t *qspi_cmd = _build_qspi_command(instruction, -1, -1); //We just need the command
@@ -235,7 +244,6 @@ int QSPI::perform_command_transaction(unsigned int instruction, const char *tx_b
     } else {
         ret = 0;
     }
-    
     unlock();
     
     return ret;
@@ -264,10 +272,15 @@ bool QSPI::_acquire() {
 
 qspi_command_t *QSPI::_build_qspi_command(int instruction, int address, int alt) {
 
+    memset( &_qspi_command, 0,  sizeof(qspi_command_t) );
     //Set up instruction phase parameters
     _qspi_command.instruction.bus_width = _inst_width; 
-    _qspi_command.instruction.value =  instruction; 
-    
+    if(instruction != -1) {
+        _qspi_command.instruction.value = instruction; 
+    } else {
+        _qspi_command.instruction.value = 0; 
+    }
+        
     //Set up address phase parameters
     _qspi_command.address.bus_width = _address_width;
     _qspi_command.address.size = _address_size;

@@ -60,39 +60,49 @@ static nrf_drv_qspi_config_t config;
 
 qspi_status_t qspi_prepare_command(qspi_t *obj, const qspi_command_t *command, bool write) 
 {
-    // we need to remap to command-address-data - x_x_x
-    // most commmon are 1-1-1, 1-1-4, 1-4-4
-    // 1-1-1
-    if (command->instruction.bus_width == QSPI_CFG_BUS_SINGLE &&
-        command->address.bus_width == QSPI_CFG_BUS_SINGLE &&
-        command->data.bus_width == QSPI_CFG_BUS_SINGLE) {
+    //Use custom command if provided by the caller
+    if(command->instruction.value != 0) {
+        //Use custom command if provided
         if (write) {
-            config.prot_if.writeoc = NRF_QSPI_WRITEOC_PP;
+            config.prot_if.writeoc = (nrf_qspi_writeoc_t)command->instruction.value;
         } else {
-            config.prot_if.readoc = NRF_QSPI_READOC_FASTREAD;
+            config.prot_if.readoc = (nrf_qspi_readoc_t)command->instruction.value;
         }
-    // 1-1-4
-    } else if (command->instruction.bus_width == QSPI_CFG_BUS_SINGLE &&
-        command->address.bus_width == QSPI_CFG_BUS_SINGLE &&
-        command->data.bus_width == QSPI_CFG_BUS_QUAD) {
-        // 1_1_4
-        if (write) {
-            config.prot_if.writeoc = NRF_QSPI_WRITEOC_PP4O;
-        } else {
-            config.prot_if.readoc = NRF_QSPI_READOC_READ4O;
+    } else {
+        // we need to remap to command-address-data - x_x_x
+        // most commmon are 1-1-1, 1-1-4, 1-4-4
+        // 1-1-1
+        if (command->instruction.bus_width == QSPI_CFG_BUS_SINGLE &&
+            command->address.bus_width == QSPI_CFG_BUS_SINGLE &&
+            command->data.bus_width == QSPI_CFG_BUS_SINGLE) {
+            if (write) {
+                config.prot_if.writeoc = NRF_QSPI_WRITEOC_PP;
+            } else {
+                config.prot_if.readoc = NRF_QSPI_READOC_FASTREAD;
+            }
+        // 1-1-4
+        } else if (command->instruction.bus_width == QSPI_CFG_BUS_SINGLE &&
+            command->address.bus_width == QSPI_CFG_BUS_SINGLE &&
+            command->data.bus_width == QSPI_CFG_BUS_QUAD) {
+            // 1_1_4
+            if (write) {
+                config.prot_if.writeoc = NRF_QSPI_WRITEOC_PP4O;
+            } else {
+                config.prot_if.readoc = NRF_QSPI_READOC_READ4O;
+            }
+        // 1-4-4
+        } else if (command->instruction.bus_width == QSPI_CFG_BUS_SINGLE &&
+            command->address.bus_width == QSPI_CFG_BUS_QUAD &&
+            command->data.bus_width == QSPI_CFG_BUS_QUAD) {
+            // 1_4_4
+            if (write) {
+                config.prot_if.writeoc = NRF_QSPI_WRITEOC_PP4IO;
+            } else {
+                config.prot_if.readoc = NRF_QSPI_READOC_READ4IO;
+            }
         }
-    // 1-4-4
-    } else if (command->instruction.bus_width == QSPI_CFG_BUS_SINGLE &&
-        command->address.bus_width == QSPI_CFG_BUS_QUAD &&
-        command->data.bus_width == QSPI_CFG_BUS_QUAD) {
-        // 1_4_4
-        if (write) {
-            config.prot_if.writeoc = NRF_QSPI_WRITEOC_PP4IO;
-        } else {
-            config.prot_if.readoc = NRF_QSPI_READOC_READ4IO;
-        }
-    }
-
+    }    
+    
     qspi_status_t ret = QSPI_STATUS_OK;
 
     // supporting only 24 or 32 bit address
